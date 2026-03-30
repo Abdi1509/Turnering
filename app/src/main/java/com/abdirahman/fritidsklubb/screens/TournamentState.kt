@@ -24,11 +24,18 @@ object TournamentState {
         var vinner: String? = null,
         val runde: Int,
         val type: KampType = KampType.NORMAL,
-        val erEkstraKamp: Boolean = false
+        val erEkstraKamp: Boolean = false,
+        val notat: String = ""
     )
 
     enum class KampType {
         NORMAL, BRONSEKAMP, FINALE, EKSTRA
+    }
+    fun oppdaterNotat(kampId: Int, notat: String) {
+        val index = kamper.indexOfFirst { it.id == kampId }
+        if (index != -1) {
+            kamper[index] = kamper[index].copy(notat = notat)
+        }
     }
 
     fun startTurnering(lagListe: List<String>) {
