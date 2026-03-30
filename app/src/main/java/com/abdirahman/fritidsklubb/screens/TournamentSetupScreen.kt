@@ -1,29 +1,15 @@
 package com.abdirahman.fritidsklubb.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import android.content.Context
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,9 +17,25 @@ import androidx.navigation.NavController
 
 @Composable
 fun TournamentSetupScreen(navController: NavController) {
-    var players by remember { mutableStateOf(listOf<String>()) }
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("turnering_prefs", Context.MODE_PRIVATE)
+
+    // Last inn lagrede spillere
+    val lagredeSpillere = prefs.getString("spillere", "")
+        ?.split(",")
+        ?.filter { it.isNotBlank() }
+        ?: emptyList()
+
+    var players by remember { mutableStateOf(lagredeSpillere) }
     var newPlayer by remember { mutableStateOf("") }
-    var groupSize by remember { mutableStateOf(1) }
+    var groupSize by remember { mutableStateOf(prefs.getInt("gruppestørrelse", 1)) }
+
+    fun lagreSpillere(liste: List<String>) {
+        prefs.edit()
+            .putString("spillere", liste.joinToString(","))
+            .putInt("gruppestørrelse", groupSize)
+            .apply()
+    }
 
     Column(
         modifier = Modifier
@@ -42,7 +44,6 @@ fun TournamentSetupScreen(navController: NavController) {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Spacer(modifier = Modifier.height(40.dp))
 
         // Header
@@ -56,8 +57,8 @@ fun TournamentSetupScreen(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("👥", fontSize = 48.sp)
-                Text("Sett opp lag", fontWeight = FontWeight.Bold, color = OsloWhite)
-                Text("Velg grupper og spillere", color = OsloTurquoise)
+                Text("Sett opp lag", fontWeight = FontWeight.Bold, color = OsloWhite, fontSize = 20.sp)
+                Text("Velg grupper og spillere", color = OsloTurquoise, fontSize = 14.sp)
             }
         }
 
@@ -67,28 +68,38 @@ fun TournamentSetupScreen(navController: NavController) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = OsloWhite)
+            colors = CardDefaults.cardColors(containerColor = OsloWhite),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text("Spillere per gruppe", fontWeight = FontWeight.Bold, color = OsloText)
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Button(
-                        onClick = { if (groupSize > 1) groupSize-- },
-                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
-                    ) { Text("−", color = OsloWhite) }
+                        onClick = {
+                            if (groupSize > 1) {
+                                groupSize--
+                                lagreSpillere(players)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("−", color = OsloWhite, fontSize = 18.sp) }
 
-                    Text("$groupSize", fontSize = 28.sp, color = OsloDarkBlue)
+                    Text("$groupSize", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = OsloDarkBlue)
 
                     Button(
-                        onClick = { groupSize++ },
-                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
-                    ) { Text("+", color = OsloWhite) }
+                        onClick = {
+                            groupSize++
+                            lagreSpillere(players)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue),
+                        shape = RoundedCornerShape(12.dp)
+                    ) { Text("+", color = OsloWhite, fontSize = 18.sp) }
                 }
             }
         }
@@ -99,47 +110,88 @@ fun TournamentSetupScreen(navController: NavController) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = OsloWhite)
+            colors = CardDefaults.cardColors(containerColor = OsloWhite),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-
+                Text("Legg til deltaker", fontWeight = FontWeight.Bold, color = OsloText)
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = newPlayer,
                     onValueChange = { newPlayer = it },
-                    label = { Text("Spillernavn") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Navn") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Button(
                     onClick = {
                         if (newPlayer.isNotBlank()) {
-                            players = players + newPlayer
+                            val oppdatert = players + newPlayer.trim()
+                            players = oppdatert
+                            lagreSpillere(oppdatert)
                             newPlayer = ""
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = OsloDarkGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = OsloDarkGreen),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("➕ Legg til spiller", color = OsloWhite)
+                    Text("➕ Legg til", color = OsloWhite)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Spillerliste
         if (players.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = OsloWhite)
+                colors = CardDefaults.cardColors(containerColor = OsloWhite),
+                elevation = CardDefaults.cardElevation(2.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Deltakere", fontWeight = FontWeight.Bold, color = OsloText)
-
-                    players.forEach {
-                        Text("• $it", color = OsloText)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Deltakere (${players.size})",
+                            fontWeight = FontWeight.Bold,
+                            color = OsloText
+                        )
+                        TextButton(
+                            onClick = {
+                                players = emptyList()
+                                lagreSpillere(emptyList())
+                            }
+                        ) {
+                            Text("🗑 Fjern alle", color = OsloWarmBlue, fontSize = 13.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    players.forEachIndexed { index, navn ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("${index + 1}. $navn", color = OsloText, fontSize = 15.sp)
+                            IconButton(
+                                onClick = {
+                                    val oppdatert = players.toMutableList().also { it.removeAt(index) }
+                                    players = oppdatert
+                                    lagreSpillere(oppdatert)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Text("✕", color = OsloWarmBlue, fontSize = 14.sp)
+                            }
+                        }
                     }
                 }
             }
@@ -149,18 +201,26 @@ fun TournamentSetupScreen(navController: NavController) {
 
         Button(
             onClick = {
-                val grupper = players.chunked(groupSize)
-                val lagNavn = grupper.mapIndexed { index, gruppe ->
-                    "Lag ${index + 1}: ${gruppe.joinToString(", ")}"
+                if (players.isNotEmpty()) {
+                    val grupper = players.chunked(groupSize)
+                    val lagNavn = grupper.mapIndexed { index, gruppe ->
+                        if (groupSize == 1) gruppe[0]
+                        else "Lag ${index + 1}: ${gruppe.joinToString(", ")}"
+                    }
+                    TournamentState.startTurnering(lagNavn)
+                    navController.navigate("bracket")
                 }
-
-                TournamentState.startTurnering(lagNavn)
-                navController.navigate("bracket")
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (players.isNotEmpty()) OsloDarkBlue else OsloDarkBlue.copy(alpha = 0.4f)
+            ),
+            enabled = players.isNotEmpty()
         ) {
-            Text("▶ Generer turnering", color = OsloWhite)
+            Text("▶ Generer turnering (${players.size} deltakere)", color = OsloWhite, fontWeight = FontWeight.Bold)
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }

@@ -378,7 +378,7 @@ fun KampKort(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Row(modifier = Modifier.weight(1f)) {
                     Text(
                         kamp.lag1,
                         fontWeight = if (kamp.vinner == kamp.lag1) FontWeight.Bold else FontWeight.Normal,
