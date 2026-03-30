@@ -12,39 +12,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 
-// Oslo kommune farger
 val OsloDarkBlue = Color(0xFF2A2859)
 val OsloWarmBlue = Color(0xFF1F42AA)
 val OsloDarkGreen = Color(0xFF034B45)
 val OsloTurquoise = Color(0xFF6FE9FF)
-val OsloGreen = Color(0xFF43F8B6)
-val OsloBackground = Color(0xFFF9F9F9)
 val OsloText = Color(0xFF2C2C2C)
 val OsloWhite = Color(0xFFFFFFFF)
 
-private val outdoorActivities = listOf(
-    "⚽ Football", "🏀 Basketball", "🏐 Volleyball",
-    "🏸 Badminton", "🏃 Relay Race", "🪵 Kubb",
-    "🥏 Ultimate Frisbee", "🧗 Obstacle Course",
-    "🚴 Cycling", "🎯 Bocce"
+private val uteAktiviteter = listOf(
+    "⚽ Fotball", "🏀 Basketball", "🏐 Volleyball",
+    "🏸 Badminton", "🏃 Stafettløp", "🪵 Kubb",
+    "🥏 Ultimate Frisbee", "🧗 Hinderløype",
+    "🚴 Sykling", "🎯 Bocce"
 )
 
-private val indoorActivities = listOf(
-    "🏓 Table Tennis", "🎯 Darts", "🎳 Bowling",
-    "🎱 Billiards", "♟️ Chess", "🎲 Board Games",
-    "🥌 Curling", "🎾 Squash", "⚽ Foosball", "🃏 Card Games"
+private val inneAktiviteter = listOf(
+    "🏓 Bordtennis", "🎯 Dart", "🎳 Bowling",
+    "🎱 Biljard", "♟️ Sjakk", "🎲 Brettspill",
+    "🥌 Curling", "🎾 Squash", "⚽ Foosball", "🃏 Kortspill"
 )
 
 @Composable
-fun SetupScreen() {
-    var playerCount by remember { mutableStateOf(6) }
-    var isOutdoor by remember { mutableStateOf<Boolean?>(null) }
-    var suggestion by remember { mutableStateOf("") }
+fun SetupScreen(navController: NavController) {
+    var erUte by remember { mutableStateOf<Boolean?>(null) }
+    var forslag by remember { mutableStateOf("") }
 
-    fun newSuggestion() {
-        val list = if (isOutdoor == true) outdoorActivities else indoorActivities
-        suggestion = list.random()
+    fun nyttForslag() {
+        val liste = if (erUte == true) uteAktiviteter else inneAktiviteter
+        forslag = liste.random()
     }
 
     Column(
@@ -64,16 +61,13 @@ fun SetupScreen() {
         ) {
             Column(
                 modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Text(text = "🏆", fontSize = 48.sp)
                 Text(
-                    text = "🏆",
-                    fontSize = 48.sp
-                )
-                Text(
-                    text = "Turnering generator",
+                    text = "Turneringsgenerator",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = OsloWhite
@@ -88,58 +82,6 @@ fun SetupScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Antall spillere
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = OsloWhite),
-            elevation = CardDefaults.cardElevation(2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Antall spillere",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = OsloText
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Button(
-                        onClick = { if (playerCount > 2) playerCount-- },
-                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue),
-                        shape = RoundedCornerShape(12.dp)
-                    ) { Text("−", fontSize = 22.sp, color = OsloWhite) }
-
-                    Text(
-                        text = playerCount.toString(),
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = OsloDarkBlue
-                    )
-
-                    Button(
-                        onClick = { if (playerCount < 20) playerCount++ },
-                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue),
-                        shape = RoundedCornerShape(12.dp)
-                    ) { Text("+", fontSize = 22.sp, color = OsloWhite) }
-                }
-                Text(
-                    text = "${playerCount * (playerCount - 1) / 2} matches total",
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         // Ute / Inne
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -149,7 +91,7 @@ fun SetupScreen() {
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    text = "Activity type",
+                    text = "Hvor skal dere være?",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = OsloText
@@ -160,28 +102,28 @@ fun SetupScreen() {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
-                        onClick = { isOutdoor = true; newSuggestion() },
-                        modifier = Modifier.weight(1f),
+                        onClick = { erUte = true; nyttForslag() },
+                        modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isOutdoor == true) OsloDarkGreen else Color.LightGray
+                            containerColor = if (erUte == true) OsloDarkGreen else Color.LightGray
                         )
-                    ) { Text("🌤 Utendørs", color = if (isOutdoor == true) OsloWhite else OsloText) }
+                    ) { Text("🌤 Ute", color = OsloWhite, fontWeight = FontWeight.Bold) }
 
                     Button(
-                        onClick = { isOutdoor = false; newSuggestion() },
-                        modifier = Modifier.weight(1f),
+                        onClick = { erUte = false; nyttForslag() },
+                        modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isOutdoor == false) OsloWarmBlue else Color.LightGray
+                            containerColor = if (erUte == false) OsloWarmBlue else Color.LightGray
                         )
-                    ) { Text("🏠 Innedørs", color = if (isOutdoor == false) OsloWhite else OsloText) }
+                    ) { Text("🏠 Inne", color = OsloWhite, fontWeight = FontWeight.Bold) }
                 }
             }
         }
 
         // Forslag
-        if (suggestion.isNotEmpty()) {
+        if (forslag.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Card(
@@ -195,31 +137,46 @@ fun SetupScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Suggested activity",
+                        text = "Foreslått aktivitet",
                         color = Color.Gray,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = suggestion,
+                        text = forslag,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = OsloText
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedButton(
-                        onClick = { newSuggestion() },
+                        onClick = { nyttForslag() },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = OsloDarkBlue)
-                    ) { Text("🔀 Try another") }
+                    ) { Text("🔀 Prøv en annen") }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            val aktivitetNavn = forslag.replace("/", "-")
+                            navController.navigate("regler/$aktivitetNavn")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = OsloWarmBlue)
+                    ) { Text("📖 Se regler") }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { /* TournamentScreen kommer */ },
+                onClick = {
+                    TournamentState.aktivitet = forslag
+                    navController.navigate("tournament_setup")
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
