@@ -31,6 +31,12 @@ object TournamentState {
     enum class KampType {
         NORMAL, BRONSEKAMP, FINALE, EKSTRA
     }
+    fun oppdaterNotat(kampId: Int, notat: String) {
+        val index = kamper.indexOfFirst { it.id == kampId }
+        if (index != -1) {
+            kamper[index] = kamper[index].copy(notat = notat)
+        }
+    }
 
     fun startTurnering(lagListe: List<String>) {
         lag = lagListe.toMutableList()

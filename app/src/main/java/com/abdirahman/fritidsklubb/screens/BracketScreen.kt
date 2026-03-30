@@ -355,6 +355,9 @@ fun KampKort(
     kanAngre: Boolean = false,
     onAngre: () -> Unit = {}
 ) {
+    var visNotatFelt by remember { mutableStateOf(false) }
+    var notatTekst by remember { mutableStateOf(kamp.notat) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -369,43 +372,111 @@ fun KampKort(
             }
         )
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    kamp.lag1,
-                    fontWeight = if (kamp.vinner == kamp.lag1) FontWeight.Bold else FontWeight.Normal,
-                    color = if (kamp.vinner == kamp.lag1) OsloDarkGreen else OsloText,
-                    fontSize = 14.sp
-                )
-                Text(
-                    if (kamp.erEkstraKamp) "vs\n⚠️ Ekstra kamp" else "vs",
-                    fontSize = 11.sp,
-                    color = if (kamp.erEkstraKamp) Color(0xFFF9A825) else Color.Gray
-                )
-                Text(
-                    kamp.lag2,
-                    fontWeight = if (kamp.vinner == kamp.lag2) FontWeight.Bold else FontWeight.Normal,
-                    color = if (kamp.vinner == kamp.lag2) OsloDarkGreen else OsloText,
-                    fontSize = 14.sp
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                when {
-                    kamp.lag2 == "Bye" -> Text("Bye ✓", color = Color.Gray, fontSize = 13.sp)
-                    erNeste -> Text("▶ Nå", color = OsloWarmBlue, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    kamp.vinner != null -> Text("✓ ${kamp.vinner}", color = OsloDarkGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    else -> Text("Venter", color = Color.Gray, fontSize = 13.sp)
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        kamp.lag1,
+                        fontWeight = if (kamp.vinner == kamp.lag1) FontWeight.Bold else FontWeight.Normal,
+                        color = if (kamp.vinner == kamp.lag1) OsloDarkGreen else OsloText,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        if (kamp.erEkstraKamp) "vs\n⚠️ Ekstra kamp" else "vs",
+                        fontSize = 11.sp,
+                        color = if (kamp.erEkstraKamp) Color(0xFFF9A825) else Color.Gray
+                    )
+                    Text(
+                        kamp.lag2,
+                        fontWeight = if (kamp.vinner == kamp.lag2) FontWeight.Bold else FontWeight.Normal,
+                        color = if (kamp.vinner == kamp.lag2) OsloDarkGreen else OsloText,
+                        fontSize = 14.sp
+                    )
                 }
 
-                if (kanAngre) {
-                    IconButton(onClick = onAngre, modifier = Modifier.size(32.dp)) {
-                        Text("↩️", fontSize = 16.sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    when {
+                        kamp.lag2 == "Bye" -> Text("Bye ✓", color = Color.Gray, fontSize = 13.sp)
+                        erNeste -> Text("▶ Nå", color = OsloWarmBlue, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        kamp.vinner != null -> Text("✓ ${kamp.vinner}", color = OsloDarkGreen, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        else -> Text("Venter", color = Color.Gray, fontSize = 13.sp)
                     }
+
+                    // Notat-knapp
+                    IconButton(
+                        onClick = { visNotatFelt = !visNotatFelt },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Text(
+                            if (kamp.notat.isNotEmpty()) "📝" else "✏️",
+                            fontSize = 16.sp
+                        )
+                    }
+
+                    if (kanAngre) {
+                        IconButton(onClick = onAngre, modifier = Modifier.size(32.dp)) {
+                            Text("↩️", fontSize = 16.sp)
+                        }
+                    }
+                }
+            }
+
+            // Vis eksisterende notat
+            if (kamp.notat.isNotEmpty() && !visNotatFelt) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9C4))
+                ) {
+                    Text(
+                        "📝 ${kamp.notat}",
+                        fontSize = 12.sp,
+                        color = OsloText,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
+
+            // Notat-felt
+            if (visNotatFelt) {
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = notatTekst,
+                    onValueChange = { notatTekst = it },
+                    placeholder = { Text("Skriv notat her...", fontSize = 13.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = false,
+                    maxLines = 3
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { visNotatFelt = false },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { Text("Avbryt", fontSize = 13.sp) }
+
+                    Button(
+                        onClick = {
+                            TournamentState.oppdaterNotat(kamp.id, notatTekst)
+                            visNotatFelt = false
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                    ) { Text("Lagre", fontSize = 13.sp, color = OsloWhite) }
                 }
             }
         }
