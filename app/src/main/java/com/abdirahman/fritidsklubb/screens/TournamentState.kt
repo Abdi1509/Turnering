@@ -24,7 +24,8 @@ object TournamentState {
         var vinner: String? = null,
         val runde: Int,
         val type: KampType = KampType.NORMAL,
-        val erEkstraKamp: Boolean = false
+        val erEkstraKamp: Boolean = false,
+        val notat: String = ""
     )
 
     enum class KampType {

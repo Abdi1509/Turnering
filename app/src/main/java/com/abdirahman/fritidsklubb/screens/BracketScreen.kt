@@ -16,6 +16,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import android.content.Context
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun BracketScreen(navController: NavController) {
@@ -25,7 +30,32 @@ fun BracketScreen(navController: NavController) {
     val ferdig = TournamentState.turneringFerdig()
     val nesteKamp = TournamentState.nesteKamp()
     var visAngreDialog by remember { mutableStateOf<TournamentState.Kamp?>(null) }
+    val context = LocalContext.current
 
+    fun vibrer(type: String) {
+        val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        when (type) {
+            "vinner" -> vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            "ferdig" -> vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 100, 100, 100, 100, 300), -1))
+        }
+    }
+    fun spillLyd(type: String) {
+        val lydId = when (type) {
+            "vinner" -> android.provider.Settings.System.DEFAULT_NOTIFICATION_URI
+            "ferdig" -> android.provider.Settings.System.DEFAULT_RINGTONE_URI
+            else -> null
+        }
+        lydId?.let {
+            val ringtone = android.media.RingtoneManager.getRingtone(context, it)
+            ringtone?.play()
+        }
+    }
     // Angre-dialog
     if (visAngreDialog != null) {
         AlertDialog(
@@ -146,6 +176,7 @@ fun BracketScreen(navController: NavController) {
 
             Button(
                 onClick = {
+                    vibrer("ferdig")
                     TournamentState.reset()
                     navController.navigate("oppsett") {
                         popUpTo("oppsett") { inclusive = true }
@@ -200,7 +231,9 @@ fun BracketScreen(navController: NavController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(
-                        onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag1) },
+                        onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag1)
+                            vibrer("vinner")
+                            spillLyd("vinner")},
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OsloDarkGreen)
@@ -209,7 +242,9 @@ fun BracketScreen(navController: NavController) {
                     }
                     Text("VS", fontWeight = FontWeight.Bold, color = OsloDarkBlue, fontSize = 16.sp)
                     Button(
-                        onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag2) },
+                        onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag2)
+                            vibrer("vinner")
+                            spillLyd("vinner")},
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OsloWarmBlue)
