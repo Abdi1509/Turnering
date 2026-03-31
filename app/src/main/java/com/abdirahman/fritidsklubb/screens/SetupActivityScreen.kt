@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +41,12 @@ private val inneAktiviteter = listOf(
 fun SetupScreen(navController: NavController) {
     var erUte by remember { mutableStateOf<Boolean?>(null) }
     var forslag by remember { mutableStateOf("") }
+
+    // Siste turnering
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("turnering_prefs", android.content.Context.MODE_PRIVATE)
+    val sisteAktivitet = prefs.getString("siste_aktivitet", null)
+    val sisteAntall = prefs.getInt("siste_antall", 0)
 
     fun nyttForslag() {
         val liste = if (erUte == true) uteAktiviteter else inneAktiviteter
@@ -80,7 +89,92 @@ fun SetupScreen(navController: NavController) {
             }
         }
 
+        val totaltGavekort = prefs.getInt("totalt_gavekort", 0)
+        val sisteGavekort = prefs.getInt("siste_gavekort", 0)
+        val antallTurneringer = prefs.getInt("antall_turneringer", 0)
+
+        if (antallTurneringer > 0) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = OsloWhite),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "📊 Statistikk",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = OsloText
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🏆", fontSize = 28.sp)
+                            Text(
+                                "$antallTurneringer",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = OsloDarkBlue
+                            )
+                            Text("Turneringer", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🎁", fontSize = 28.sp)
+                            Text(
+                                "$sisteGavekort",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = OsloDarkBlue
+                            )
+                            Text("Gavekort sist", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🎁", fontSize = 28.sp)
+                            Text(
+                                "$totaltGavekort",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = OsloDarkBlue
+                            )
+                            Text("Gavekort Totalt", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                }
+            }
+        }
         Spacer(modifier = Modifier.height(24.dp))
+        if (sisteAktivitet != null && sisteAntall > 0) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = OsloWhite),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("📋", fontSize = 28.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Siste turnering", fontSize = 12.sp, color = Color.Gray)
+                        Text(sisteAktivitet, fontWeight = FontWeight.Bold, color = OsloText, fontSize = 15.sp)
+                        Text("$sisteAntall deltakere", fontSize = 13.sp, color = OsloText)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+
+
 
         // Ute / Inne
         Card(
@@ -91,7 +185,7 @@ fun SetupScreen(navController: NavController) {
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    text = "Hvor skal dere være?",
+                    text = "Hvor skal dere være idag?",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = OsloText
@@ -154,7 +248,8 @@ fun SetupScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = OsloDarkBlue)
-                    ) { Text("🔀 Prøv en annen") }
+                    ) {  Icon(Icons.Filled.Refresh, contentDescription = null, tint = OsloDarkBlue)
+                        Text("Prøv en annen") }
 
                     Spacer(modifier = Modifier.height(8.dp))
 

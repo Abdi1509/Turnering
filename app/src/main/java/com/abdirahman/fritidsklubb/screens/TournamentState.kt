@@ -138,45 +138,88 @@ object TournamentState {
         val alleKlare = kamperIDenneRunden.all { it.vinner != null }
         if (!alleKlare) return
 
-        // Samle vinnere — ekstra kamp-vinner erstatter motstanderen sin
-        val vinnere = mutableListOf<String>()
         val ekstraKamp = kamper.firstOrNull { it.runde == runde && it.type == KampType.EKSTRA }
+
+        // Samle vinnere fra normale kamper
+        val vinnereNormal = mutableListOf<String>()
+        val tapereNormal = mutableListOf<String>()
 
         kamper.filter { it.runde == runde && it.type == KampType.NORMAL }.forEach { kamp ->
             val vinner = kamp.vinner ?: return@forEach
-            // Sjekk om denne vinneren ble utfordret av ekstraspiller
-            if (ekstraKamp != null && ekstraKamp.lag2 == vinner) {
-                // Bruk ekstra kamp-vinneren istedet
-                vinnere.add(ekstraKamp.vinner ?: vinner)
-            } else {
-                vinnere.add(vinner)
-            }
+            val taper = if (vinner == kamp.lag1) kamp.lag2 else kamp.lag1
+            vinnereNormal.add(vinner)
+            if (taper != "Bye") tapereNormal.add(taper)
         }
 
-        val tapere = kamper
-            .filter { it.runde == runde && it.type == KampType.NORMAL }
-            .filter { it.lag2 != "Bye" }
-            .mapNotNull { kamp ->
-                if (kamp.vinner == kamp.lag1) kamp.lag2 else kamp.lag1
+        // Hvis ekstra kamp finnes, erstatt vinneren som ble utfordret
+        val endeligeVinnere = mutableListOf<String>()
+        val ekstraTaper = mutableListOf<String>() // taperen av ekstra kamp
+
+        if (ekstraKamp != null) {
+            val ekstraVinner = ekstraKamp.vinner ?: return
+            val ekstraTaperNavn = if (ekstraVinner == ekstraKamp.lag1) ekstraKamp.lag2 else ekstraKamp.lag1
+
+            vinnereNormal.forEach { vinner ->
+                if (vinner == ekstraKamp.lag2) {
+                    // Denne vinneren ble utfordret — bytt ut med ekstra kamp vinner
+                    endeligeVinnere.add(ekstraVinner)
+                } else {
+                    endeligeVinnere.add(vinner)
+                }
             }
+            ekstraTaper.add(ekstraTaperNavn)
+        } else {
+            endeligeVinnere.addAll(vinnereNormal)
+        }
 
         when {
-            vinnere.size == 2 && tapere.size >= 2 && fase == Fase.NORMAL -> {
+            // Én vinner — ferdig
+            endeligeVinnere.size == 1 -> {
+                fase = Fase.FERDIG
+            }
+            // To vinnere — finale med bronsekamp
+            endeligeVinnere.size == 2 -> {
+                val bronse1 = tapereNormal.getOrNull(0)
+                val bronse2 = tapereNormal.getOrNull(1) ?: ekstraTaper.getOrNull(0)
+
                 fase = Fase.BRONSEKAMP
                 val id = kamper.size
-                kamper.add(Kamp(id = id, lag1 = tapere[0], lag2 = tapere[1], runde = runde, type = KampType.BRONSEKAMP))
-                kamper.add(Kamp(id = id + 1, lag1 = vinnere[0], lag2 = vinnere[1], runde = runde, type = KampType.FINALE))
+                if (bronse1 != null && bronse2 != null) {
+                    kamper.add(Kamp(id = id, lag1 = bronse1, lag2 = bronse2, runde = runde, type = KampType.BRONSEKAMP))
+                    kamper.add(Kamp(id = id + 1, lag1 = endeligeVinnere[0], lag2 = endeligeVinnere[1], runde = runde, type = KampType.FINALE))
+                } else {
+                    kamper.add(Kamp(id = id, lag1 = endeligeVinnere[0], lag2 = endeligeVinnere[1], runde = runde, type = KampType.FINALE))
+                    fase = Fase.FINALE
+                }
             }
-            vinnere.size > 2 -> {
+            endeligeVinnere.size == 3 -> {
+                val blandet = endeligeVinnere.shuffled()
+                val ekstraSpillerNeste = blandet[0]
+                val semifinaleSpillere = listOf(blandet[1], blandet[2])
+
                 runde++
-                genererRunde(vinnere)
+                kamper.add(Kamp(
+                    id = kamper.size,
+                    lag1 = semifinaleSpillere[0],
+                    lag2 = semifinaleSpillere[1],
+                    runde = runde
+                ))
+                ekstraSpiller = ekstraSpillerNeste
+
+                // Etter semifinalen vil vinneren møte ekstraspilleren i finalen
+                // Taperen av semifinalen blir automatisk 3. plass via tredjePlass()
+            }
+            // Flere vinnere — neste runde
+            endeligeVinnere.size > 3 -> {
+                runde++
+                genererRunde(endeligeVinnere)
             }
         }
 
         val bronsekamp = kamper.firstOrNull { it.type == KampType.BRONSEKAMP }
         val finale = kamper.firstOrNull { it.type == KampType.FINALE }
         if (bronsekamp?.vinner != null && fase == Fase.BRONSEKAMP) fase = Fase.FINALE
-        if (finale?.vinner != null) fase = Fase.FERDIG
+        if (finale?.vinner != null && fase != Fase.FERDIG) fase = Fase.FERDIG
     }
 
     fun nesteKamp(): Kamp? {
@@ -205,16 +248,62 @@ object TournamentState {
 
     fun turneringFerdig(): Boolean = fase == Fase.FERDIG
 
-    fun turneringsvinner(): String? = kamper.firstOrNull { it.type == KampType.FINALE }?.vinner
-
+    fun turneringsvinner(): String? {
+        return kamper.firstOrNull { it.type == KampType.FINALE }?.vinner
+            ?: if (fase == Fase.FERDIG) kamper.lastOrNull { it.vinner != null }?.vinner else null
+    }
     fun andrePlass(): String? {
-        val finale = kamper.firstOrNull { it.type == KampType.FINALE } ?: return null
-        val vinner = finale.vinner ?: return null
-        return if (finale.lag1 == vinner) finale.lag2 else finale.lag1
+        // Sjekk finale først
+        val finale = kamper.firstOrNull { it.type == KampType.FINALE }
+        if (finale?.vinner != null) {
+            return if (finale.lag1 == finale.vinner) finale.lag2 else finale.lag1
+        }
+        // Hvis ingen finale, sjekk siste ekstra kamp
+        val sisteEkstra = kamper.lastOrNull { it.type == KampType.EKSTRA && it.vinner != null }
+        if (sisteEkstra != null) {
+            return if (sisteEkstra.lag1 == sisteEkstra.vinner) sisteEkstra.lag2 else sisteEkstra.lag1
+        }
+        return null
     }
 
-    fun tredjePlass(): String? = kamper.firstOrNull { it.type == KampType.BRONSEKAMP }?.vinner
+    fun tredjePlass(): String? {
+        // Bronsekamp finnes
+        val bronsekamp = kamper.firstOrNull { it.type == KampType.BRONSEKAMP }
+        if (bronsekamp?.vinner != null) return bronsekamp.vinner
 
+        // Hvis siste ekstra kamp avgjorde finalen, er taperen av semifinalen 3. plass
+        val sisteEkstra = kamper.lastOrNull { it.type == KampType.EKSTRA && it.vinner != null }
+        if (sisteEkstra != null) {
+            // Finn semifinalen i samme runde som ekstra kampen
+            val semifinale = kamper
+                .filter { it.type == KampType.NORMAL && it.runde == sisteEkstra.runde && it.vinner != null }
+                .firstOrNull()
+            if (semifinale != null) {
+                return if (semifinale.vinner == semifinale.lag1) semifinale.lag2 else semifinale.lag1
+            }
+        }
+
+        // Fallback — taperen av siste normale kamp
+        val sisteNormale = kamper
+            .filter { it.type == KampType.NORMAL && it.vinner != null }
+            .maxByOrNull { it.runde }
+        if (sisteNormale != null) {
+            return if (sisteNormale.vinner == sisteNormale.lag1) sisteNormale.lag2 else sisteNormale.lag1
+        }
+
+        return null
+    }
+    fun lagreResultat(context: android.content.Context, antallGavekort: Int = 0) {
+        val prefs = context.getSharedPreferences("turnering_prefs", android.content.Context.MODE_PRIVATE)
+        val totaltGavekort = prefs.getInt("totalt_gavekort", 0) + antallGavekort
+        prefs.edit()
+            .putString("siste_aktivitet", aktivitet)
+            .putInt("siste_antall", lag.size)
+            .putInt("siste_gavekort", antallGavekort)
+            .putInt("totalt_gavekort", totaltGavekort)
+            .putInt("antall_turneringer", prefs.getInt("antall_turneringer", 0) + 1)
+            .apply()
+    }
     fun reset() {
         lag.clear()
         kamper.clear()

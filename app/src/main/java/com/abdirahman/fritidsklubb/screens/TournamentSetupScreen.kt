@@ -14,11 +14,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
 
 @Composable
 fun TournamentSetupScreen(navController: NavController) {
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("turnering_prefs", Context.MODE_PRIVATE)
+    var visMinimumDialog by remember { mutableStateOf(false) }
 
     // Last inn lagrede spillere
     val lagredeSpillere = prefs.getString("spillere", "")
@@ -35,6 +40,19 @@ fun TournamentSetupScreen(navController: NavController) {
             .putString("spillere", liste.joinToString(","))
             .putInt("gruppestørrelse", groupSize)
             .apply()
+    }
+    if (visMinimumDialog) {
+        AlertDialog(
+            onDismissRequest = { visMinimumDialog = false },
+            title = { Text("For få deltakere") },
+            text = { Text("Du må ha minimum 2 deltakere for å starte en turnering!") },
+            confirmButton = {
+                Button(
+                    onClick = { visMinimumDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                ) { Text("OK", color = OsloWhite) }
+            }
+        )
     }
 
     Column(
@@ -138,7 +156,9 @@ fun TournamentSetupScreen(navController: NavController) {
                     colors = ButtonDefaults.buttonColors(containerColor = OsloDarkGreen),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("➕ Legg til", color = OsloWhite)
+                    Icon(Icons.Filled.Face, contentDescription = null, tint = OsloWhite)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Legg til", color = OsloWhite)
                 }
             }
         }
@@ -201,7 +221,10 @@ fun TournamentSetupScreen(navController: NavController) {
 
         Button(
             onClick = {
-                if (players.isNotEmpty()) {
+                if (players.size < 2) {
+                    visMinimumDialog = true
+                }
+                else{
                     val grupper = players.chunked(groupSize)
                     val lagNavn = grupper.mapIndexed { index, gruppe ->
                         if (groupSize == 1) gruppe[0]

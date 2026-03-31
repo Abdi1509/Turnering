@@ -20,6 +20,8 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
@@ -31,6 +33,8 @@ fun BracketScreen(navController: NavController) {
     val nesteKamp = TournamentState.nesteKamp()
     var visAngreDialog by remember { mutableStateOf<TournamentState.Kamp?>(null) }
     val context = LocalContext.current
+    var visGavekortDialog by remember { mutableStateOf(false) }
+    var antallGavekort by remember { mutableStateOf(0) }
 
     fun vibrer(type: String) {
         val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -77,6 +81,69 @@ fun BracketScreen(navController: NavController) {
                 OutlinedButton(onClick = { visAngreDialog = null }) {
                     Text("Avbryt")
                 }
+            }
+        )
+    }
+    if (visGavekortDialog) {
+        AlertDialog(
+            onDismissRequest = { visGavekortDialog = false },
+            title = { Text("🎁 Gavekort") },
+            text = {
+                Column {
+                    Text("Ble det delt ut gavekort?")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = { if (antallGavekort > 0) antallGavekort-- },
+                            colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                        ) { Text("−", color = OsloWhite) }
+
+                        Text(
+                            "$antallGavekort",
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = OsloDarkBlue
+                        )
+
+                        Button(
+                            onClick = { antallGavekort++ },
+                            colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                        ) { Text("+", color = OsloWhite) }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        TournamentState.lagreResultat(context, antallGavekort)
+                        visGavekortDialog = false
+                        vibrer("ferdig")
+                        spillLyd("ferdig")
+                        TournamentState.reset()
+                        navController.navigate("oppsett") {
+                            popUpTo("oppsett") { inclusive = true }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                ) { Text("Lagre og avslutt", color = OsloWhite) }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        TournamentState.lagreResultat(context, 0)
+                        visGavekortDialog = false
+                        vibrer("ferdig")
+                        spillLyd("ferdig")
+                        TournamentState.reset()
+                        navController.navigate("oppsett") {
+                            popUpTo("oppsett") { inclusive = true }
+                        }
+                    }
+                ) { Text("Ingen gavekort") }
             }
         )
     }
@@ -175,17 +242,12 @@ fun BracketScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    vibrer("ferdig")
-                    TournamentState.reset()
-                    navController.navigate("oppsett") {
-                        popUpTo("oppsett") { inclusive = true }
-                    }
-                },
+                onClick = { visGavekortDialog = true },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
-            ) { Text("🔄 Ny turnering", color = OsloWhite, fontWeight = FontWeight.Bold) }
+            ) {  Icon(Icons.Filled.Refresh, contentDescription = null, tint = OsloWhite)
+                Text(" Ny turnering", color = OsloWhite, fontWeight = FontWeight.Bold) }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
