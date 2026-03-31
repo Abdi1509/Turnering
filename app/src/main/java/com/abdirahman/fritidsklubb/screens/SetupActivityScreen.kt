@@ -25,32 +25,37 @@ val OsloText = Color(0xFF2C2C2C)
 val OsloWhite = Color(0xFFFFFFFF)
 
 private val uteAktiviteter = listOf(
-    "⚽ Fotball", "🏀 Basketball", "🏐 Volleyball",
+    "⚽ Fotball", "🏀 Basketball",
     "🏸 Badminton", "🏃 Stafettløp", "🪵 Kubb",
-    "🥏 Ultimate Frisbee", "🧗 Hinderløype",
-    "🚴 Sykling", "🎯 Bocce"
+    "🥏 Frisbee", "🧗 Hinderløype",
+    "🎯 Bocce", "\uD83E\uDD98 Hoppetau",
+    "\uD83E\uDD45 Straffekonk",
+
+
 )
 
 private val inneAktiviteter = listOf(
     "🏓 Bordtennis", "🎯 Dart", "🎳 Bowling",
-    "🎱 Biljard", "♟️ Sjakk", "🎲 Brettspill",
-    "🥌 Curling", "🎾 Squash", "⚽ Foosball", "🃏 Kortspill"
+    "🎱 Biljard", "♟️ Sjakk", "🎲 Ludos",
+    "⚽ Foosball", "🃏 Kortspill", "⚽ Fifa"
 )
 
 @Composable
 fun SetupScreen(navController: NavController) {
-    var erUte by remember { mutableStateOf<Boolean?>(null) }
-    var forslag by remember { mutableStateOf("") }
-
-    // Siste turnering
+    var forslag by remember { mutableStateOf(TournamentState.sisteForslag) }
+    var erUte by remember { mutableStateOf(TournamentState.erUte) }
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("turnering_prefs", android.content.Context.MODE_PRIVATE)
     val sisteAktivitet = prefs.getString("siste_aktivitet", null)
     val sisteAntall = prefs.getInt("siste_antall", 0)
+    val totaltGavekort = prefs.getInt("totalt_gavekort", 0)
+    val sisteGavekort = prefs.getInt("siste_gavekort", 0)
+    val antallTurneringer = prefs.getInt("antall_turneringer", 0)
 
     fun nyttForslag() {
         val liste = if (erUte == true) uteAktiviteter else inneAktiviteter
         forslag = liste.random()
+        TournamentState.sisteForslag = forslag
     }
 
     Column(
@@ -82,17 +87,14 @@ fun SetupScreen(navController: NavController) {
                     color = OsloWhite
                 )
                 Text(
-                    text = "Oslo kommune fritidsklubb",
+                    text = "Team B fritidsklubb",
                     fontSize = 14.sp,
                     color = OsloTurquoise
                 )
             }
         }
 
-        val totaltGavekort = prefs.getInt("totalt_gavekort", 0)
-        val sisteGavekort = prefs.getInt("siste_gavekort", 0)
-        val antallTurneringer = prefs.getInt("antall_turneringer", 0)
-
+        // Statistikk
         if (antallTurneringer > 0) {
             Spacer(modifier = Modifier.height(16.dp))
             Card(
@@ -143,14 +145,16 @@ fun SetupScreen(navController: NavController) {
                                 fontWeight = FontWeight.Bold,
                                 color = OsloDarkBlue
                             )
-                            Text("Gavekort Totalt", fontSize = 12.sp, color = Color.Gray)
+                            Text("Gavekort totalt", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
                 }
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
+
+        // Siste turnering
         if (sisteAktivitet != null && sisteAntall > 0) {
+            Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -165,16 +169,19 @@ fun SetupScreen(navController: NavController) {
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text("Siste turnering", fontSize = 12.sp, color = Color.Gray)
-                        Text(sisteAktivitet, fontWeight = FontWeight.Bold, color = OsloText, fontSize = 15.sp)
+                        Text(
+                            sisteAktivitet,
+                            fontWeight = FontWeight.Bold,
+                            color = OsloText,
+                            fontSize = 15.sp
+                        )
                         Text("$sisteAntall deltakere", fontSize = 13.sp, color = OsloText)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
-
-
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Ute / Inne
         Card(
@@ -196,7 +203,11 @@ fun SetupScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
-                        onClick = { erUte = true; nyttForslag() },
+                        onClick = {
+                            erUte = true
+                            TournamentState.erUte = true
+                            nyttForslag()
+                        },
                         modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -205,7 +216,11 @@ fun SetupScreen(navController: NavController) {
                     ) { Text("🌤 Ute", color = OsloWhite, fontWeight = FontWeight.Bold) }
 
                     Button(
-                        onClick = { erUte = false; nyttForslag() },
+                        onClick = {
+                            erUte = false
+                            TournamentState.erUte = false
+                            nyttForslag()
+                        },
                         modifier = Modifier.weight(1f).height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -248,8 +263,11 @@ fun SetupScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = OsloDarkBlue)
-                    ) {  Icon(Icons.Filled.Refresh, contentDescription = null, tint = OsloDarkBlue)
-                        Text("Prøv en annen") }
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null, tint = OsloDarkBlue)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Prøv en annen")
+                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 

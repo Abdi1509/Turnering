@@ -117,34 +117,27 @@ fun BracketScreen(navController: NavController) {
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        TournamentState.lagreResultat(context, antallGavekort)
-                        visGavekortDialog = false
-                        vibrer("ferdig")
-                        spillLyd("ferdig")
-                        TournamentState.reset()
-                        navController.navigate("oppsett") {
-                            popUpTo("oppsett") { inclusive = true }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
-                ) { Text("Lagre og avslutt", color = OsloWhite) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            TournamentState.lagreResultat(context, antallGavekort)
+                            visGavekortDialog = false
+                            TournamentState.reset()
+                            navController.navigate("oppsett") {
+                                popUpTo("oppsett") { inclusive = true }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                    ) { Text("Lagre", color = OsloWhite) }
+                }
             },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        TournamentState.lagreResultat(context, 0)
-                        visGavekortDialog = false
-                        vibrer("ferdig")
-                        spillLyd("ferdig")
-                        TournamentState.reset()
-                        navController.navigate("oppsett") {
-                            popUpTo("oppsett") { inclusive = true }
-                        }
-                    }
-                ) { Text("Ingen gavekort") }
-            }
+            dismissButton = {}
         )
     }
 

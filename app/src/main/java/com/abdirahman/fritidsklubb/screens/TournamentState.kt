@@ -12,6 +12,8 @@ object TournamentState {
     var runde: Int by mutableStateOf(1)
     var fase: Fase by mutableStateOf(Fase.NORMAL)
     var ekstraSpiller: String? by mutableStateOf(null)
+    var sisteForslag: String by mutableStateOf("")
+    var erUte: Boolean? by mutableStateOf(null)
 
     enum class Fase {
         NORMAL, BRONSEKAMP, FINALE, FERDIG
@@ -31,6 +33,7 @@ object TournamentState {
     enum class KampType {
         NORMAL, BRONSEKAMP, FINALE, EKSTRA
     }
+
     fun oppdaterNotat(kampId: Int, notat: String) {
         val index = kamper.indexOfFirst { it.id == kampId }
         if (index != -1) {
@@ -51,14 +54,12 @@ object TournamentState {
         val blandet = deltakere.shuffled().toMutableList()
         val startId = kamper.size
 
-        // Hvis odde antall — sett til side én spiller som ekstraspiller
         if (blandet.size % 2 != 0) {
             ekstraSpiller = blandet.removeLastOrNull()
         } else {
             ekstraSpiller = null
         }
 
-        // Generer vanlige kamper
         for (i in blandet.indices step 2) {
             kamper.add(
                 Kamp(
@@ -73,7 +74,6 @@ object TournamentState {
 
     private fun leggTilEkstraKamp() {
         val ekstra = ekstraSpiller ?: return
-        // Velg en tilfeldig ferdig kamp fra denne runden
         val ferdigeKamper = kamper.filter {
             it.runde == runde &&
                     it.type == KampType.NORMAL &&
@@ -101,7 +101,6 @@ object TournamentState {
             kamper[index] = kamper[index].copy(vinner = vinner)
         }
 
-        // Etter at en normal kamp er ferdig, sjekk om ekstraSpiller skal få sin kamp
         val alleVanligeFerdig = kamper
             .filter { it.runde == runde && it.type == KampType.NORMAL }
             .all { it.vinner != null }
@@ -118,7 +117,6 @@ object TournamentState {
         val index = kamper.indexOfFirst { it.id == kampId }
         if (index != -1) {
             val kamp = kamper[index]
-            // Hvis ekstra kamp angres, fjern den og sett ekstraSpiller tilbake
             if (kamp.type == KampType.EKSTRA) {
                 ekstraSpiller = kamp.lag1
                 kamper.removeAt(index)
@@ -140,7 +138,6 @@ object TournamentState {
 
         val ekstraKamp = kamper.firstOrNull { it.runde == runde && it.type == KampType.EKSTRA }
 
-        // Samle vinnere fra normale kamper
         val vinnereNormal = mutableListOf<String>()
         val tapereNormal = mutableListOf<String>()
 
@@ -151,9 +148,8 @@ object TournamentState {
             if (taper != "Bye") tapereNormal.add(taper)
         }
 
-        // Hvis ekstra kamp finnes, erstatt vinneren som ble utfordret
         val endeligeVinnere = mutableListOf<String>()
-        val ekstraTaper = mutableListOf<String>() // taperen av ekstra kamp
+        val ekstraTaper = mutableListOf<String>()
 
         if (ekstraKamp != null) {
             val ekstraVinner = ekstraKamp.vinner ?: return
@@ -161,7 +157,6 @@ object TournamentState {
 
             vinnereNormal.forEach { vinner ->
                 if (vinner == ekstraKamp.lag2) {
-                    // Denne vinneren ble utfordret — bytt ut med ekstra kamp vinner
                     endeligeVinnere.add(ekstraVinner)
                 } else {
                     endeligeVinnere.add(vinner)
@@ -173,11 +168,9 @@ object TournamentState {
         }
 
         when {
-            // Én vinner — ferdig
             endeligeVinnere.size == 1 -> {
                 fase = Fase.FERDIG
             }
-            // To vinnere — finale med bronsekamp
             endeligeVinnere.size == 2 -> {
                 val bronse1 = tapereNormal.getOrNull(0)
                 val bronse2 = tapereNormal.getOrNull(1) ?: ekstraTaper.getOrNull(0)
@@ -198,18 +191,16 @@ object TournamentState {
                 val semifinaleSpillere = listOf(blandet[1], blandet[2])
 
                 runde++
-                kamper.add(Kamp(
-                    id = kamper.size,
-                    lag1 = semifinaleSpillere[0],
-                    lag2 = semifinaleSpillere[1],
-                    runde = runde
-                ))
+                kamper.add(
+                    Kamp(
+                        id = kamper.size,
+                        lag1 = semifinaleSpillere[0],
+                        lag2 = semifinaleSpillere[1],
+                        runde = runde
+                    )
+                )
                 ekstraSpiller = ekstraSpillerNeste
-
-                // Etter semifinalen vil vinneren møte ekstraspilleren i finalen
-                // Taperen av semifinalen blir automatisk 3. plass via tredjePlass()
             }
-            // Flere vinnere — neste runde
             endeligeVinnere.size > 3 -> {
                 runde++
                 genererRunde(endeligeVinnere)
@@ -225,7 +216,6 @@ object TournamentState {
     fun nesteKamp(): Kamp? {
         return when (fase) {
             Fase.NORMAL -> {
-                // Vanlige kamper først, deretter ekstra kamp
                 kamper.firstOrNull {
                     it.runde == runde &&
                             it.type == KampType.NORMAL &&
@@ -252,13 +242,12 @@ object TournamentState {
         return kamper.firstOrNull { it.type == KampType.FINALE }?.vinner
             ?: if (fase == Fase.FERDIG) kamper.lastOrNull { it.vinner != null }?.vinner else null
     }
+
     fun andrePlass(): String? {
-        // Sjekk finale først
         val finale = kamper.firstOrNull { it.type == KampType.FINALE }
         if (finale?.vinner != null) {
             return if (finale.lag1 == finale.vinner) finale.lag2 else finale.lag1
         }
-        // Hvis ingen finale, sjekk siste ekstra kamp
         val sisteEkstra = kamper.lastOrNull { it.type == KampType.EKSTRA && it.vinner != null }
         if (sisteEkstra != null) {
             return if (sisteEkstra.lag1 == sisteEkstra.vinner) sisteEkstra.lag2 else sisteEkstra.lag1
@@ -267,14 +256,11 @@ object TournamentState {
     }
 
     fun tredjePlass(): String? {
-        // Bronsekamp finnes
         val bronsekamp = kamper.firstOrNull { it.type == KampType.BRONSEKAMP }
         if (bronsekamp?.vinner != null) return bronsekamp.vinner
 
-        // Hvis siste ekstra kamp avgjorde finalen, er taperen av semifinalen 3. plass
         val sisteEkstra = kamper.lastOrNull { it.type == KampType.EKSTRA && it.vinner != null }
         if (sisteEkstra != null) {
-            // Finn semifinalen i samme runde som ekstra kampen
             val semifinale = kamper
                 .filter { it.type == KampType.NORMAL && it.runde == sisteEkstra.runde && it.vinner != null }
                 .firstOrNull()
@@ -283,7 +269,6 @@ object TournamentState {
             }
         }
 
-        // Fallback — taperen av siste normale kamp
         val sisteNormale = kamper
             .filter { it.type == KampType.NORMAL && it.vinner != null }
             .maxByOrNull { it.runde }
@@ -293,6 +278,7 @@ object TournamentState {
 
         return null
     }
+
     fun lagreResultat(context: android.content.Context, antallGavekort: Int = 0) {
         val prefs = context.getSharedPreferences("turnering_prefs", android.content.Context.MODE_PRIVATE)
         val totaltGavekort = prefs.getInt("totalt_gavekort", 0) + antallGavekort
@@ -304,6 +290,7 @@ object TournamentState {
             .putInt("antall_turneringer", prefs.getInt("antall_turneringer", 0) + 1)
             .apply()
     }
+
     fun reset() {
         lag.clear()
         kamper.clear()
@@ -311,5 +298,7 @@ object TournamentState {
         fase = Fase.NORMAL
         ekstraSpiller = null
         aktivitet = ""
+        sisteForslag = ""
+        erUte = null
     }
 }
