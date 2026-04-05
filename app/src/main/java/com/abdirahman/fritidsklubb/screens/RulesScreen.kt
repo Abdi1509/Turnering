@@ -292,6 +292,20 @@ fun hentRegler(aktivitet: String): AktivitetRegler {
             ),
             tips = "Bruk sjakkur for å begrense tenketid per spiller. 5 minutter per spiller per kamp er passende for turneringer."
         )
+        aktivitet.contains("Hoppetau", ignoreCase = true) -> AktivitetRegler(
+            navn = "Hoppetau",
+            emoji = "\uD83E\uDD98",
+            beskrivelse = "Hoppetau er et fysisk utfordrende lek der målet er å unngå å bli truffet av tauet!",
+            regler = listOf(
+                "Alle deltakere stiller seg i kø",
+                "Hoppetaue skal roteres mot spillere ved bruk av to personer",
+                "Hver spiller skal klare å komme seg inn i hoppetauet",
+                "Hoppe minst 5 ganger",
+                "også skal spilleren gå ut av hoppetauen",
+                "alt dette skal skje uten at spilleren blir truffet av tauet"
+            ),
+            tips = "Bruk sjakkur for å begrense tenketid per spiller. 5 minutter per spiller per kamp er passende for turneringer."
+        )
         else -> AktivitetRegler(
             navn = aktivitet.replace(Regex("^\\S+\\s"), ""),
             emoji = "🎮",

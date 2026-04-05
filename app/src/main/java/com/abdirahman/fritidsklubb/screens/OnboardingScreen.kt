@@ -152,7 +152,7 @@ fun OnboardingScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
             ) {
                 Text(
-                    if (erSiste) "🚀 Kom i gang!" else "Neste →",
+                    if (erSiste) "Kom i gang!" else "Neste →",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = OsloWhite
