@@ -43,6 +43,9 @@ class MainActivity : ComponentActivity() {
                     composable("bracket") {
                         BracketScreen(navController = navController)
                     }
+                    composable("poeng_turnering") {
+                        PoengTurneringScreen(navController = navController)
+                    }
                 }
             }
         }

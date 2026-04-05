@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.abdirahman.fritidsklubb.screens.TournamentState.antallRunder
 import kotlin.math.ceil
 
 @Composable
@@ -31,7 +32,8 @@ fun TournamentSetupScreen(navController: NavController) {
     val prefs = context.getSharedPreferences("turnering_prefs", Context.MODE_PRIVATE)
     var visMinimumDialog by remember { mutableStateOf(false) }
     var lagModus by remember { mutableStateOf<String?>(null) } // "tilfeldig" eller "manuell"
-
+    var format by remember { mutableStateOf("elimination") }
+    var antallRunder by remember { mutableStateOf(3) }
     val lagredeSpillere = prefs.getString("spillere", "")
         ?.split(",")
         ?.filter { it.isNotBlank() }
@@ -97,6 +99,112 @@ fun TournamentSetupScreen(navController: NavController) {
                 Text(TournamentState.aktivitet, fontSize = 14.sp, color = OsloTurquoise)
             }
         }
+
+        // Format-valg
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = OsloWhite),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Turneringsformat", fontWeight = FontWeight.Bold, color = OsloText, fontSize = 16.sp)
+                Text("Velg hvordan turneringen skal fungere", fontSize = 13.sp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (format == "elimination") OsloDarkBlue else Color(0xFFF2F2F2))
+                            .clickable { format = "elimination" }
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🏆", fontSize = 28.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Utslagsturnering",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (format == "elimination") OsloWhite else OsloText,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                "Tap = ute",
+                                fontSize = 11.sp,
+                                color = if (format == "elimination") OsloWhite.copy(alpha = 0.8f) else Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (format == "poeng") OsloWarmBlue else Color(0xFFF2F2F2))
+                            .clickable { format = "poeng" }
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🏅", fontSize = 28.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Poengbasert",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (format == "poeng") OsloWhite else OsloText,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                "Alle spiller alle runder",
+                                fontSize = 11.sp,
+                                color = if (format == "poeng") OsloWhite.copy(alpha = 0.8f) else Color.Gray,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                // Antall runder hvis poengbasert
+                if (format == "poeng") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Antall runder", fontWeight = FontWeight.Bold, color = OsloText, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(1, 2, 3, 4, 5, 6).forEach { antall ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (antallRunder == antall) OsloWarmBlue else Color(0xFFF2F2F2))
+                                    .clickable { antallRunder = antall }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "$antall",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (antallRunder == antall) OsloWhite else OsloText
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Column(
             modifier = Modifier.padding(20.dp),
@@ -497,44 +605,26 @@ fun TournamentSetupScreen(navController: NavController) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
             Button(
                 onClick = {
-                    when (lagModus) {
-                        "tilfeldig" -> {
-                            if (players.size < 2) {
-                                visMinimumDialog = true
-                            } else {
-                                val grupper = players.shuffled().chunked(groupSize)
-                                val lagNavn = grupper.mapIndexed { index, gruppe ->
-                                    if (groupSize == 1) gruppe[0]
-                                    else "Lag ${index + 1}: ${gruppe.joinToString(", ")}"
-                                }
-                                TournamentState.startTurnering(lagNavn)
-                                navController.navigate("bracket")
+                    if (players.size < 2) {
+                        visMinimumDialog = true
+                    } else {
+                        val grupper = when (lagModus) {
+                            "manuell" -> manuelleLag.filter { it.second.isNotEmpty() }.map { (navn, spillere) ->
+                                if (spillere.size == 1) spillere[0] else "$navn: ${spillere.joinToString(", ")}"
+                            }
+                            else -> players.shuffled().chunked(groupSize).mapIndexed { index, gruppe ->
+                                if (groupSize == 1) gruppe[0] else "Lag ${index + 1}: ${gruppe.joinToString(", ")}"
                             }
                         }
-                        "manuell" -> {
-                            val lagMedSpillere = manuelleLag.filter { it.second.isNotEmpty() }
-                            if (lagMedSpillere.size < 2) {
-                                visMinimumDialog = true
-                            } else {
-                                val lagNavn = lagMedSpillere.map { (navn, spillere) ->
-                                    if (spillere.size == 1) spillere[0]
-                                    else "$navn: ${spillere.joinToString(", ")}"
-                                }
-                                TournamentState.startTurnering(lagNavn)
-                                navController.navigate("bracket")
-                            }
-                        }
-                        else -> {
-                            // Ingen modus valgt — start uten lag
-                            if (players.size < 2) {
-                                visMinimumDialog = true
-                            } else {
-                                TournamentState.startTurnering(players)
-                                navController.navigate("bracket")
-                            }
+                        if (format == "poeng") {
+                            TournamentState.antallRunder = antallRunder
+                            TournamentState.startTurnering(grupper)
+                            navController.navigate("poeng_turnering")
+                        } else {
+                            TournamentState.startTurnering(grupper)
+                            navController.navigate("bracket")
                         }
                     }
                 },

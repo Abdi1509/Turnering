@@ -44,13 +44,17 @@ private val uteAktiviteter = listOf(
     "🏸 Badminton", "🏃 Stafettløp", "🪵 Kubb",
     "🥏 Frisbee", "🧗 Hinderløype",
     "🎯 Bocce", "🦘 Hoppetau",
-    "🥅 Straffekonk"
+    "🥅 Straffekonk", "💣 Bomba",
+    "🌀 Monsterball"
 )
 
 private val inneAktiviteter = listOf(
     "🏓 Bordtennis", "🎯 Dart", "🎳 Bowling",
     "🎱 Biljard", "♟️ Sjakk", "🎲 Ludo",
-    "⚽ Foosball", "🃏 Kortspill", "🎮 Fifa"
+    "⚽ Foosball", "🃏 Kortspill", "🎮 Fifa",
+    "🥤 Flipp the Cup", "🧱 Høyeste tårn",
+    "🏀 Pingpong i kurven", "🏓 Pingpong i kopp",
+    "🖍️ Hva tegner du?", "👮 Sheriff"
 )
 
 @Composable

@@ -14,6 +14,7 @@ object TournamentState {
     var ekstraSpiller: String? by mutableStateOf(null)
     var sisteForslag: String by mutableStateOf("")
     var erUte: Boolean? by mutableStateOf(null)
+    var antallRunder: Int by mutableStateOf(3)
 
     enum class Fase {
         NORMAL, BRONSEKAMP, FINALE, FERDIG
@@ -300,5 +301,6 @@ object TournamentState {
         aktivitet = ""
         sisteForslag = ""
         erUte = null
+        antallRunder = 3
     }
 }
