@@ -20,6 +20,8 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
@@ -31,6 +33,8 @@ fun BracketScreen(navController: NavController) {
     val nesteKamp = TournamentState.nesteKamp()
     var visAngreDialog by remember { mutableStateOf<TournamentState.Kamp?>(null) }
     val context = LocalContext.current
+    var visGavekortDialog by remember { mutableStateOf(false) }
+    var antallGavekort by remember { mutableStateOf(0) }
 
     fun vibrer(type: String) {
         val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -78,6 +82,62 @@ fun BracketScreen(navController: NavController) {
                     Text("Avbryt")
                 }
             }
+        )
+    }
+    if (visGavekortDialog) {
+        AlertDialog(
+            onDismissRequest = { visGavekortDialog = false },
+            title = { Text("🎁 Gavekort") },
+            text = {
+                Column {
+                    Text("Ble det delt ut gavekort?")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Button(
+                            onClick = { if (antallGavekort > 0) antallGavekort-- },
+                            colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                        ) { Text("−", color = OsloWhite) }
+
+                        Text(
+                            "$antallGavekort",
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = OsloDarkBlue
+                        )
+
+                        Button(
+                            onClick = { antallGavekort++ },
+                            colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                        ) { Text("+", color = OsloWhite) }
+                    }
+                }
+            },
+            confirmButton = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            TournamentState.lagreResultat(context, antallGavekort)
+                            visGavekortDialog = false
+                            TournamentState.reset()
+                            navController.navigate("oppsett") {
+                                popUpTo("oppsett") { inclusive = true }
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
+                    ) { Text("Lagre", color = OsloWhite) }
+                }
+            },
+            dismissButton = {}
         )
     }
 
@@ -175,20 +235,17 @@ fun BracketScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    vibrer("ferdig")
-                    TournamentState.reset()
-                    navController.navigate("oppsett") {
-                        popUpTo("oppsett") { inclusive = true }
-                    }
-                },
+                onClick = { visGavekortDialog = true },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
-            ) { Text("🔄 Ny turnering", color = OsloWhite, fontWeight = FontWeight.Bold) }
+            ) {
+                Text("🎁 Registrer premie", color = OsloWhite, fontWeight = FontWeight.Bold) }
 
             Spacer(modifier = Modifier.height(24.dp))
+
         }
+
 
         // Neste kamp
         if (nesteKamp != null && !ferdig) {
@@ -233,7 +290,7 @@ fun BracketScreen(navController: NavController) {
                     Button(
                         onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag1)
                             vibrer("vinner")
-                            spillLyd("vinner")},
+                            },
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OsloDarkGreen)
@@ -244,7 +301,7 @@ fun BracketScreen(navController: NavController) {
                     Button(
                         onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag2)
                             vibrer("vinner")
-                            spillLyd("vinner")},
+                            },
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OsloWarmBlue)

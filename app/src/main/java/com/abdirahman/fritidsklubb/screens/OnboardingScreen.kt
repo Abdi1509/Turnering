@@ -18,6 +18,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.launch
 
 data class OnboardingSteg(
     val emoji: String,
@@ -39,7 +42,7 @@ val onboardingSteg = listOf(
     OnboardingSteg(
         emoji = "📖",
         tittel = "Les reglene",
-        beskrivelse = "Usikker på reglene? Trykk på 'Se regler' for å få en enkel forklaring av aktiviteten — perfekt for de som aldri har prøvd før!"
+        beskrivelse = "Usikker på reglene? Trykk på 'Se regler' for å få en enkel forklaring av aktiviteten"
     ),
     OnboardingSteg(
         emoji = "👥",
@@ -55,9 +58,10 @@ val onboardingSteg = listOf(
 
 @Composable
 fun OnboardingScreen(navController: NavController) {
-    var nåværendeSteg by remember { mutableStateOf(0) }
-    val steg = onboardingSteg[nåværendeSteg]
-    val erSiste = nåværendeSteg == onboardingSteg.size - 1
+    val pagerState = rememberPagerState(pageCount = { onboardingSteg.size })
+    val scope = rememberCoroutineScope()
+    val nåværendeSteg = pagerState.currentPage
+    val erSiste = nåværendeSteg == onboardingSteg.lastIndex
 
     Column(
         modifier = Modifier
@@ -70,52 +74,63 @@ fun OnboardingScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(40.dp))
 
         // Innhold
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.Center
-        ) {
-            // Oslo kommune header
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = OsloDarkBlue)
+            contentPadding = PaddingValues(horizontal = 14.dp),
+            pageSpacing = 8.dp
+        ) { page ->
+
+            val steg = onboardingSteg[page]
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(10.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = OsloDarkBlue)
                 ) {
-                    Text(steg.emoji, fontSize = 64.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(steg.emoji, fontSize = 64.sp)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = steg.tittel,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = OsloWhite,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = OsloWhite)
+                ) {
                     Text(
-                        text = steg.tittel,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = OsloWhite,
-                        textAlign = TextAlign.Center
+                        text = steg.beskrivelse,
+                        fontSize = 16.sp,
+                        color = OsloText,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(24.dp)
                     )
                 }
             }
+        }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = OsloWhite),
-                elevation = CardDefaults.cardElevation(2.dp)
-            ) {
-                Text(
-                    text = steg.beskrivelse,
-                    fontSize = 16.sp,
-                    color = OsloText,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 24.sp,
-                    modifier = Modifier.padding(24.dp)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
 
             // Prikker
             Row(
@@ -125,7 +140,7 @@ fun OnboardingScreen(navController: NavController) {
                 onboardingSteg.forEachIndexed { index, _ ->
                     Box(
                         modifier = Modifier
-                            .size(if (index == nåværendeSteg) 12.dp else 8.dp)
+                            .size(if (index == nåværendeSteg) 10.dp else 8.dp)
                             .background(
                                 color = if (index == nåværendeSteg) OsloDarkBlue else Color.LightGray,
                                 shape = CircleShape
@@ -133,7 +148,7 @@ fun OnboardingScreen(navController: NavController) {
                     )
                 }
             }
-        }
+
 
         // Knapper
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -144,7 +159,9 @@ fun OnboardingScreen(navController: NavController) {
                             popUpTo("onboarding") { inclusive = true }
                         }
                     } else {
-                        nåværendeSteg++
+                        scope.launch {
+                            pagerState.animateScrollToPage(nåværendeSteg + 1)
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -152,7 +169,7 @@ fun OnboardingScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
             ) {
                 Text(
-                    if (erSiste) "🚀 Kom i gang!" else "Neste →",
+                    if (erSiste) "Kom i gang!" else "Neste →",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = OsloWhite
