@@ -9,7 +9,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -83,10 +86,29 @@ fun TournamentSetupScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Brush.verticalGradient(colors = listOf(OsloDarkBlue, OsloWarmBlue)))
-                .padding(top = 56.dp, bottom = 32.dp, start = 24.dp, end = 24.dp),
-            contentAlignment = Alignment.Center
+                .padding(top = 30.dp, bottom = 32.dp),
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Tilbakeknapp
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 16.dp, top = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Tilbake",
+                    tint = OsloWhite
+                )
+            }
+
+            // Sentrert innhold (det du allerede har)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text("👥", fontSize = 48.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(

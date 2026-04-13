@@ -53,25 +53,6 @@ class MainActivity : ComponentActivity() {
                                 contentColor = Color.White
                             ) {
                                 NavigationBarItem(
-                                    icon = { Icon(Icons.Filled.Home, contentDescription = "Hjem") },
-                                    label = { Text("Hjem") },
-                                    selected = currentRoute == "hjem",
-                                    onClick = {
-                                        navController.navigate("hjem") {
-                                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = Color(0xFF6FE9FF),
-                                        selectedTextColor = Color(0xFF6FE9FF),
-                                        unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                                        unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                                        indicatorColor = Color.White.copy(alpha = 0.1f)
-                                    )
-                                )
-                                NavigationBarItem(
                                     icon = { Icon(Icons.Filled.PlayArrow, contentDescription = "Ny turnering") },
                                     label = { Text("Turnering") },
                                     selected = currentRoute == "oppsett",
@@ -115,7 +96,7 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = if (harSettOnboarding) "hjem" else "onboarding",
+                        startDestination = if (harSettOnboarding) "oppsett" else "onboarding",
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable("onboarding") {

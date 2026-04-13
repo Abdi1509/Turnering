@@ -239,11 +239,13 @@ fun BracketScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = OsloDarkBlue)
-            ) {  Icon(Icons.Filled.Refresh, contentDescription = null, tint = OsloWhite)
-                Text(" Ny turnering", color = OsloWhite, fontWeight = FontWeight.Bold) }
+            ) {
+                Text("🎁 Registrer premie", color = OsloWhite, fontWeight = FontWeight.Bold) }
 
             Spacer(modifier = Modifier.height(24.dp))
+
         }
+
 
         // Neste kamp
         if (nesteKamp != null && !ferdig) {
@@ -288,7 +290,7 @@ fun BracketScreen(navController: NavController) {
                     Button(
                         onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag1)
                             vibrer("vinner")
-                            spillLyd("vinner")},
+                            },
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OsloDarkGreen)
@@ -299,7 +301,7 @@ fun BracketScreen(navController: NavController) {
                     Button(
                         onClick = { TournamentState.registrerVinner(nesteKamp.id, nesteKamp.lag2)
                             vibrer("vinner")
-                            spillLyd("vinner")},
+                            },
                         modifier = Modifier.weight(1f).height(64.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = OsloWarmBlue)
