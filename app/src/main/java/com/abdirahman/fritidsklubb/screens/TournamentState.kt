@@ -15,6 +15,7 @@ object TournamentState {
     var sisteForslag: String by mutableStateOf("")
     var erUte: Boolean? by mutableStateOf(null)
     var antallRunder: Int by mutableStateOf(3)
+    var visModus: String? by mutableStateOf(null)
 
     enum class Fase {
         NORMAL, BRONSEKAMP, FINALE, FERDIG
@@ -256,6 +257,7 @@ object TournamentState {
         return null
     }
 
+
     fun tredjePlass(): String? {
         val bronsekamp = kamper.firstOrNull { it.type == KampType.BRONSEKAMP }
         if (bronsekamp?.vinner != null) return bronsekamp.vinner
@@ -302,5 +304,6 @@ object TournamentState {
         sisteForslag = ""
         erUte = null
         antallRunder = 3
+        visModus = null
     }
 }

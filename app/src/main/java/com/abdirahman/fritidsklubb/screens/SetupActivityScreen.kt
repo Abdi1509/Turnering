@@ -39,6 +39,8 @@ val OsloTurquoise = Color(0xFF6FE9FF)
 val OsloText = Color(0xFF2C2C2C)
 val OsloWhite = Color(0xFFFFFFFF)
 
+val OsloLightGreen = Color(0xFFC7F6C9)
+
 private val uteAktiviteter = listOf(
     "⚽ Fotball", "🏀 Basketball",
     "🏸 Badminton", "🏃 Stafettløp", "🪵 Kubb",
@@ -61,8 +63,7 @@ private val inneAktiviteter = listOf(
 fun SetupScreen(navController: NavController) {
     var forslag by remember { mutableStateOf(TournamentState.sisteForslag) }
     var erUte by remember { mutableStateOf(TournamentState.erUte) }
-    var visModus by remember { mutableStateOf<String?>(null) } // "forslag" eller "direkte"
-
+    var visModus by remember { mutableStateOf(TournamentState.visModus) }
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("turnering_prefs", android.content.Context.MODE_PRIVATE)
     val sisteAktivitet = prefs.getString("siste_aktivitet", null)
@@ -74,6 +75,7 @@ fun SetupScreen(navController: NavController) {
     var visSpinner by remember { mutableStateOf(false) }
     var spinnerTekst by remember { mutableStateOf("") }
     val rotasjon = remember { Animatable(0f) }
+
 
     fun nyttForslag() {
         scope.launch {
@@ -286,6 +288,7 @@ fun SetupScreen(navController: NavController) {
                     elevation = CardDefaults.cardElevation(2.dp),
                     onClick = {
                         visModus = "forslag"
+                        TournamentState.visModus = "forslag"
                         forslag = ""
 
                         scope.launch {
@@ -329,6 +332,7 @@ fun SetupScreen(navController: NavController) {
                     elevation = CardDefaults.cardElevation(2.dp),
                     onClick = {
                         visModus = "direkte"
+                        TournamentState.visModus = "direkte"
                         TournamentState.aktivitet = "Egendefinert turnering"
                         navController.navigate("tournament_setup")
                     }
@@ -388,9 +392,14 @@ fun SetupScreen(navController: NavController) {
                                 modifier = Modifier.weight(1f).height(52.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (erUte == true) OsloDarkGreen else Color.LightGray
+                                    containerColor = if (erUte == true) OsloDarkGreen else OsloLightGreen
                                 )
-                            ) { Text("🌤 Ute", color = OsloWhite, fontWeight = FontWeight.Bold) }
+                            ) {    Text(
+                                "🌤 Ute",
+                                color = if (erUte == true) OsloWhite else OsloText,
+                                fontWeight = FontWeight.Bold
+                            )
+                            }
 
                             Button(
                                 onClick = {
@@ -401,9 +410,12 @@ fun SetupScreen(navController: NavController) {
                                 modifier = Modifier.weight(1f).height(52.dp),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (erUte == false) OsloWarmBlue else Color.LightGray
+                                    containerColor = if (erUte == false) OsloWarmBlue else OsloLightGreen
                                 )
-                            ) { Text("🏠 Inne", color = OsloWhite, fontWeight = FontWeight.Bold) }
+                            ) { Text("🏠 Inne", color = if (erUte == true) OsloWhite else OsloText,
+                                fontWeight = FontWeight.Bold
+                            )
+                            }
                         }
                     }
                 }
